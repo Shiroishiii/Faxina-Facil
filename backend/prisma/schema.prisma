@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PapelUsuario {
+  ADMIN
+  ATENDENTE
+}
+
+enum TipoCliente {
+  RESIDENCIAL
+  COMERCIAL
+}
+
+enum StatusAgendamento {
+  PENDENTE
+  CONFIRMADO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  papel     PapelUsuario
+  ativo     Boolean  @default(true)
+
+  historicos HistoricoAgendamento[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cliente {
+  id            String @id @default(cuid())
+
+  nome          String
+  documento     String @unique
+  email         String?
+  telefone      String
+
+  tipo          TipoCliente
+
+  logradouro    String
+  numero        String
+  complemento   String?
+  bairro        String
+  cidade        String
+  estado        String
+  cep           String
+
+  ativo         Boolean @default(true)
+
+  agendamentos  Agendamento[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Profissional {
+  id             String @id @default(cuid())
+
+  nome           String
+  documento      String @unique
+  email          String?
+  telefone       String
+
+  especialidade  String?
+
+  ativo          Boolean @default(true)
+
+  disponibilidades Disponibilidade[]
+  agendamentos     Agendamento[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Disponibilidade {
+  id              String @id @default(cuid())
+
+  profissionalId  String
+  profissional     Profissional @relation(fields: [profissionalId], references: [id])
+
+  data             DateTime
+
+  horaInicio       DateTime
+  horaFim          DateTime
+
+  disponivel       Boolean @default(true)
+
+  observacao       String?
+
+  createdAt        DateTime @default(now())
+}
+
+model Agendamento {
+  id               String @id @default(cuid())
+
+  clienteId        String
+  cliente          Cliente @relation(fields: [clienteId], references: [id])
+
+  profissionalId   String?
+  profissional      Profissional? @relation(fields: [profissionalId], references: [id])
+
+  tipo             TipoCliente
+
+  status           StatusAgendamento @default(PENDENTE)
+
+  dataHoraInicio   DateTime
+  dataHoraFim      DateTime
+
+  enderecoServico  String
+
+  descricao        String?
+  valor            Decimal? @db.Decimal(10,2)
+  observacao       String?
+
+  historicos       HistoricoAgendamento[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model HistoricoAgendamento {
+  id               String @id @default(cuid())
+
+  agendamentoId    String
+  agendamento      Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+
+  usuarioId        String?
+  usuario          Usuario? @relation(fields: [usuarioId], references: [id])
+
+  acao             String
+  observacao       String?
+
+  createdAt        DateTime @default(now())
+}
